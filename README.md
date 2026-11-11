@@ -275,6 +275,18 @@ flowchart LR
     G --> H["allure-report/index.html<br/>one self-contained file"]
 ```
 
+The overview of a run:
+
+![Allure report overview: 25 tests, 100% passed](docs/images/allure-overview.png)
+
+A test, with each page action and check as a step:
+
+![The guest checkout test in the Allure report, listing its steps](docs/images/allure-steps.png)
+
+A step opened to show the screen after it:
+
+![A step expanded to show the screenshot of the order confirmation](docs/images/allure-step-screenshot.png)
+
 - **In the report:** tests are grouped by feature and story (`@Feature`, `@Story`), with a
   severity and a plain-language name (`@DisplayName`). Each step shows the screen after it. A
   failing step shows the screen at the moment it failed, and a failing test has the device log.
@@ -299,6 +311,11 @@ and the device log.
 | Expects the wrong cart total | The cart shows $29.98; the test expects $99.99 | Failed: product defect |
 | Expects an order confirmation after a half swipe | A half swipe does not place the order | Broken: test defect |
 | Waits for a toast that never comes | A wrong password shows a field error, not a toast | Failed: product defect |
+
+The first of them in the report: the expected and actual text, the defect category, the failing
+step in red and the device log.
+
+![A failed demo test in the Allure report](docs/images/allure-failure.png)
 
 They are tagged `@FailureDemo`, which normal runs skip. Run them on their own with
 `./gradlew connectedDebugAndroidTest -PfailureDemo`.
