@@ -323,3 +323,5 @@ They are tagged `@FailureDemo`, which normal runs skip. Run them on their own wi
 ## License
 
 [MIT](LICENSE) © 2026 Sean Das
+
+Built by Sean Das · [seandas.github.io](https://seandas.github.io)
