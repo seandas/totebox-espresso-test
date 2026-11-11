@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Stable IDs for the cart screen's tabs, so tests can find them -->
+    <item name="tab_cart" type="id" />
+    <item name="tab_saved" type="id" />
+</resources>
