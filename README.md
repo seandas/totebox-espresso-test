@@ -1,5 +1,7 @@
 # Totebox
 
+[![CI](https://github.com/seandas/totebox-espresso-test/actions/workflows/ci.yml/badge.svg)](https://github.com/seandas/totebox-espresso-test/actions/workflows/ci.yml)
+
 A small Android shopping app, built as a realistic target for UI test automation.
 It is written in Kotlin with classic Android views (not Compose), so it suits Espresso testing.
 It needs no server: products, accounts and orders are built in and kept in memory.
@@ -97,6 +99,7 @@ Totebox/
 │           │       └── FailureDemo.kt              The @FailureDemo annotation
 │           └── resources/allure.properties         Where Allure writes its results
 │
+├── .github/workflows/ci.yml          CI: build, lint, unit tests and UI tests on an emulator
 ├── allure-results/                   Raw results of the last UI run   (generated, git-ignored)
 ├── allure-report/index.html          The HTML report of the last run  (generated, git-ignored)
 ├── build.gradle.kts, settings.gradle.kts, gradle.properties, gradlew
@@ -229,6 +232,19 @@ action and check. `uiStep` also waits for the app to be idle before taking its s
 | `withTextMatching(regex)` | `support/Matchers.kt` | Text that changes each run, such as the order number `TB-######` |
 | `inRow`, `listHasRow` | `support/ListMatchers.kt` | A view inside the list row for a product; whether a product is anywhere in a list, on screen or not |
 | `string(R.string.…)` | `support/TestData.kt` | Expected texts come from the app's own resources, so a wording change does not break tests |
+
+### Continuous integration
+
+`.github/workflows/ci.yml` runs on every push to `main` and every pull request:
+
+| Job | What it does |
+|---|---|
+| Build, lint and unit tests | Builds the app, runs Android lint and the JVM unit tests |
+| Espresso UI tests | Starts an API 34 emulator (Pixel 6 profile) on GitHub's Linux runner and runs the UI suite |
+
+The Allure report of each run is attached to the run as the `allure-report` artifact, whether
+the tests pass or fail: open the run on the Actions tab, download the artifact and open
+`index.html`.
 
 ### What the UI tests cover
 
