@@ -13,7 +13,7 @@ It needs no server: products, accounts and orders are built in and kept in memor
 | Product details | Quantity stepper (1 to 10); add to cart with a snackbar and "View cart" action; at most 10 of a product, with a "limit" message past that |
 | Cart | Change quantities, remove items, empty state, subtotal, shipping (free from $50, otherwise $4.99), total |
 | Saved for later | A second tab on the cart screen; "Save for later" moves a cart item there, where it can be moved back to the cart or deleted |
-| Checkout | Guests must log in first (their cart is kept); shipping form and card validation (5-digit ZIP, 16-digit card, MM/YY expiry not in the past, 3-digit CVV); pay on delivery hides the card fields |
+| Checkout | Guests must log in first (their cart is kept); shipping form and card validation (5-digit ZIP, 16-digit card, MM/YY expiry not in the past, 3-digit CVV); pay on delivery hides the card fields; the order is placed with a "Swipe to place order" slider (letting go early slides it back; an invalid form shows its errors and resets it; TalkBack and the keyboard can confirm it too) |
 | Order placed | Order number (`TB-` and 6 digits) and total; back returns to the store |
 | Crash test item | Always last in the product list; adding it to the cart (from the list or its details screen) crashes the app on purpose with an `IndexOutOfBoundsException` (`util/CrashTest.kt`) |
 | Menu (⋮) | Home, Saved items, Settings, and Log out (Log in for guests) |

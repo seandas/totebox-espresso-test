@@ -204,12 +204,11 @@
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/place_order_button"
+            <com.seandas.totebox.ui.widget.SwipeToConfirmView
+                android:id="@+id/place_order_slider"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="@string/place_order" />
+                android:layout_height="64dp"
+                android:layout_marginTop="12dp" />
 
             <ProgressBar
                 android:id="@+id/checkout_progress"

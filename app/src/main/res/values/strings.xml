@@ -115,6 +115,8 @@
     <string name="card_note">Demo store: no real payment is taken.</string>
     <string name="order_total">Order total: %1$s</string>
     <string name="place_order">Place order</string>
+    <string name="swipe_to_place_order">Swipe to place order</string>
+    <string name="placing_order">Placing order…</string>
     <string name="error_name_required">Enter your full name</string>
     <string name="error_address_required">Enter your street address</string>
     <string name="error_city_required">Enter your city</string>

@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Contents of SwipeToConfirmView: a label across the track and a round handle to drag -->
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <TextView
+        android:id="@+id/swipe_label"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:importantForAccessibility="no"
+        android:paddingStart="64dp"
+        android:paddingEnd="16dp"
+        android:text="@string/swipe_to_place_order"
+        android:textColor="@color/brand_dark"
+        android:textSize="16sp"
+        android:textStyle="bold" />
+
+    <ImageView
+        android:id="@+id/swipe_thumb"
+        android:layout_width="56dp"
+        android:layout_height="56dp"
+        android:layout_gravity="start|center_vertical"
+        android:background="@drawable/bg_swipe_thumb"
+        android:importantForAccessibility="no"
+        android:padding="16dp"
+        android:src="@drawable/ic_arrow_forward" />
+</merge>

@@ -45,7 +45,8 @@ class CheckoutActivity : ShopActivity() {
         CheckoutField.entries.forEach { field ->
             layoutFor(field).editText?.doAfterTextChanged { layoutFor(field).error = null }
         }
-        b.placeOrderButton.setOnClickListener { placeOrder() }
+        // A full swipe places the order (TalkBack and the keyboard can confirm it too)
+        b.placeOrderSlider.onConfirmed = ::placeOrder
     }
 
     private fun layoutFor(field: CheckoutField): TextInputLayout = when (field) {
@@ -91,11 +92,11 @@ class CheckoutActivity : ShopActivity() {
         if (problems.isNotEmpty()) {
             problems.forEach { (field, problem) -> layoutFor(field).error = getString(messageFor(field, problem)) }
             layoutFor(problems.keys.first()).requestFocus()
+            b.placeOrderSlider.reset() // let the shopper fix the form and swipe again
             return
         }
 
         val total = Cart.totalCents
-        b.placeOrderButton.isEnabled = false
         b.checkoutProgress.visibility = View.VISIBLE
         FakeNetwork.run(1200, { OrderNumbers.next() }) { orderNumber ->
             if (isDestroyed) return@run
