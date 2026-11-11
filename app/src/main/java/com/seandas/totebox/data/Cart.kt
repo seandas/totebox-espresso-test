@@ -34,10 +34,18 @@ object Cart {
         saved.clear()
     }
 
-    /** Moves a cart line to the saved list, adding to any quantity already saved. */
-    fun saveForLater(productId: Int) {
-        val quantity = lines.remove(productId) ?: return
-        saved[productId] = (savedQuantityOf(productId) + quantity).coerceAtMost(MAX_QUANTITY)
+    /**
+     * Moves a cart line to the saved list, up to [MAX_QUANTITY] saved per product. Whatever does
+     * not fit stays in the cart. Returns how many were moved.
+     */
+    fun saveForLater(productId: Int): Int {
+        val quantity = lines[productId] ?: return 0
+        val alreadySaved = savedQuantityOf(productId)
+        val moved = quantity.coerceAtMost(MAX_QUANTITY - alreadySaved)
+        if (moved == 0) return 0
+        saved[productId] = alreadySaved + moved
+        if (moved == quantity) lines.remove(productId) else lines[productId] = quantity - moved
+        return moved
     }
 
     /**

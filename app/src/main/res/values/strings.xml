@@ -82,6 +82,7 @@
     <string name="save_for_later">Save for later</string>
     <string name="save_named_for_later">Save %1$s for later</string>
     <string name="saved_for_later">Saved %1$s for later</string>
+    <string name="saved_limit_reached">You already have the limit of %1$d × %2$s saved for later</string>
     <string name="move_to_cart">Move to cart</string>
     <string name="move_named_to_cart">Move %1$s to cart</string>
     <string name="moved_to_cart">Moved %1$d × %2$s to your cart</string>

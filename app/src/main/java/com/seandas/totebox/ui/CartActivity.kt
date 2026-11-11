@@ -81,9 +81,10 @@ class CartActivity : ShopActivity() {
     }
 
     private fun saveForLater(product: Product) {
-        Cart.saveForLater(product.id)
+        val moved = Cart.saveForLater(product.id)
         render()
-        notify(getString(R.string.saved_for_later, product.name))
+        notify(if (moved == 0) getString(R.string.saved_limit_reached, Cart.MAX_QUANTITY, product.name)
+        else getString(R.string.saved_for_later, product.name))
     }
 
     private fun moveToCart(product: Product) {

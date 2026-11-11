@@ -51,6 +51,18 @@ class CartTest {
     }
 
     @Test
+    fun saveForLaterKeepsWhatDoesNotFitInTheCart() {
+        Cart.add(1, 2)
+        Cart.saveForLater(1) // 2 saved
+        Cart.add(1, 10)
+        assertEquals(8, Cart.saveForLater(1))
+        assertEquals(Cart.MAX_QUANTITY, Cart.savedQuantityOf(1))
+        assertEquals(2, Cart.quantityOf(1)) // nothing lost: 10 saved + 2 in the cart
+        assertEquals(0, Cart.saveForLater(1)) // saved list is full
+        assertEquals(2, Cart.quantityOf(1))
+    }
+
+    @Test
     fun moveToCartBringsTheSavedQuantityBack() {
         Cart.add(1, 2)
         Cart.saveForLater(1)
