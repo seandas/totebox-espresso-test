@@ -54,11 +54,53 @@ This is a demo store: no real payment is taken, and the card fields are only val
 ## Project layout
 
 ```
-app/src/main/java/com/seandas/totebox/
-  data/   Catalog, Cart, Session, LoginRules, CheckoutValidator (no Android dependencies)
-  ui/     One activity per screen; ShopActivity holds the shared toolbar, menu and cart badge
-  util/   FakeNetwork and its idling resource, price formatting, the deliberate crash
-app/src/test/   JVM unit tests
+Totebox/
+├── app/
+│   ├── build.gradle.kts              App build, test dependencies and the Allure report tasks
+│   └── src/
+│       ├── main/                     THE APP
+│       │   ├── AndroidManifest.xml
+│       │   ├── java/com/seandas/totebox/
+│       │   │   ├── data/             Business rules, no Android dependencies
+│       │   │   │   ├── Catalog.kt, Product.kt      The 8 products and the crash test item
+│       │   │   │   ├── Cart.kt                     Cart lines, limits, shipping, saved for later
+│       │   │   │   ├── Session.kt, LoginRules.kt   Login, guest mode and the login rules
+│       │   │   │   └── CheckoutValidator.kt        ZIP, card, expiry and CVV rules
+│       │   │   ├── ui/               One activity per screen
+│       │   │   │   ├── ShopActivity.kt             Shared toolbar, menu and cart badge
+│       │   │   │   ├── LoginActivity.kt … SettingsActivity.kt
+│       │   │   │   ├── ProductAdapter.kt, CartAdapter.kt, SavedAdapter.kt
+│       │   │   │   └── widget/SwipeToConfirmView.kt   The "Swipe to place order" slider
+│       │   │   └── util/             FakeNetwork and its idling resource, prices, the deliberate crash
+│       │   └── res/                  Layouts, strings, icons, theme
+│       │
+│       ├── test/                     JVM UNIT TESTS (no device)
+│       │   └── java/com/seandas/totebox/data/
+│       │       └── CartTest, SessionTest, LoginRulesTest, CheckoutValidatorTest, CatalogTest
+│       │
+│       └── androidTest/              ESPRESSO UI TESTS (emulator or device)
+│           ├── java/com/seandas/totebox/
+│           │   ├── tests/            What is checked
+│           │   │   ├── BaseTest.kt                 Shared setup and teardown
+│           │   │   ├── LoginTest.kt, CartTest.kt, SavedForLaterTest.kt,
+│           │   │   │   CheckoutTest.kt, GuestCheckoutTest.kt
+│           │   │   └── FailureDemoTest.kt          Fails on purpose (skipped by default)
+│           │   ├── pages/            How each screen is driven (page objects)
+│           │   │   └── LoginPage, ProductsPage, CartPage, SavedForLaterPage,
+│           │   │       CheckoutPage, OrderPlacedPage
+│           │   └── support/          Shared building blocks
+│           │       ├── AllureSteps.kt              uiStep: a report step with a screenshot
+│           │       ├── Matchers.kt, ListMatchers.kt   Field errors, helper text, list rows
+│           │       ├── SwipeActions.kt             Dragging the slider handle
+│           │       ├── ToastWatcher.kt             Checking toasts
+│           │       ├── TestData.kt, Products.kt    Inputs and product names
+│           │       └── FailureDemo.kt              The @FailureDemo annotation
+│           └── resources/allure.properties         Where Allure writes its results
+│
+├── allure-results/                   Raw results of the last UI run   (generated, git-ignored)
+├── allure-report/index.html          The HTML report of the last run  (generated, git-ignored)
+├── build.gradle.kts, settings.gradle.kts, gradle.properties, gradlew
+└── README.md, LICENSE
 ```
 
 ## Build and run
@@ -73,12 +115,177 @@ Requires Android Studio, or JDK 17+ with the Android SDK. Minimum Android 8.0 (A
 ## Tests
 
 ```
-./gradlew testDebugUnitTest            # JVM unit tests, no device needed
-./gradlew connectedDebugAndroidTest    # instrumented (Espresso) tests on an emulator or device
+./gradlew testDebugUnitTest                         # 29 JVM unit tests, no device needed
+./gradlew connectedDebugAndroidTest                 # 25 Espresso UI tests on a running emulator or device
+./gradlew connectedDebugAndroidTest -PfailureDemo   # only the 3 tests that fail on purpose
+./gradlew allureReport                              # rebuild the HTML report from the last UI run
 ```
 
-The Espresso, espresso-contrib and AndroidX test runner dependencies are set up; the Espresso
-suite in `app/src/androidTest` is in progress.
+| Layer | Where | Tests | What it checks |
+|---|---|---|---|
+| Unit | `app/src/test` | 29 | The rules in `data/`: cart limits and shipping, saved for later, login rules, session, checkout validation |
+| UI | `app/src/androidTest` | 25 | The app through its screens, as a user would use it |
+| Failure demo | `tests/FailureDemoTest.kt` | 3 | Nothing: they fail on purpose to show the failure report |
+
+Rules are tested at the unit level, where every edge case is cheap. The UI tests check that the
+screens are wired to those rules and that the flows across screens work.
+
+## Test architecture
+
+### Three layers
+
+```mermaid
+flowchart TD
+    T["tests/<br/>LoginTest, CartTest, SavedForLaterTest,<br/>CheckoutTest, GuestCheckoutTest"]
+    B["tests/BaseTest<br/>reset, idling resource, app start"]
+    P["pages/<br/>one page object per screen"]
+    S["support/<br/>uiStep, matchers, slider drag,<br/>toast check, test data"]
+    E["Espresso + Allure"]
+    A["Totebox app"]
+    T -->|extends| B
+    T -->|calls actions and checks| P
+    P -->|built from| S
+    B --> S
+    S --> E
+    P --> E
+    E -->|drives and inspects| A
+```
+
+- **Tests** say what is checked, in the user's terms. They contain no Espresso calls; they call
+  page objects.
+- **Pages** know how each screen is driven: which views to find, how to act on them and how to
+  check them. A change to a screen's layout is fixed in one page class.
+- **Support** holds what several pages share: the report step, custom matchers and actions,
+  and test data.
+
+### The page object pattern
+
+Each screen has one class in `pages/`, written to four rules:
+
+1. **Locators are private.** Views are found inside the page (`onView(withId(R.id.login_button))`)
+   and never exposed to tests.
+2. **Actions return a page.** An action that stays on the screen returns the same page
+   (`enterEmail(...)`); one that moves to another screen returns that screen's page
+   (`tapCheckout()` returns a `CheckoutPage`). Tests therefore read as one chain, and the
+   compiler stops a test from calling a cart action while on the login screen.
+3. **Checks start with `check`** (`checkTotals(...)`, `checkEmailError(...)`) and also return
+   the page, so actions and checks interleave in the chain.
+4. **Every action and check is a report step.** Each one runs inside `uiStep("…")`, which
+   names the step in plain words and attaches a screenshot.
+
+A test then reads like the scenario it checks:
+
+```kotlin
+@Test
+@DisplayName("A guest logs in at checkout, keeps the cart and completes the purchase")
+fun guestLogsInAtCheckoutAndBuys() {
+    openApp()
+        .continueWithoutLogin()                 // LoginPage    -> ProductsPage
+        .addToCart(TOTE)
+        .openCart()                             // ProductsPage -> CartPage
+        .tapCheckoutAsGuest()                   // CartPage     -> LoginPage
+        .checkCheckoutGate()
+        .logInToCheckOut(TestData.VALID_EMAIL, TestData.VALID_PASSWORD)   // -> CheckoutPage
+        .checkOrderTotal("$29.98")
+        .enterShippingAddress(TestData.NAME, TestData.ADDRESS, TestData.CITY, TestData.ZIP)
+        .choosePayOnDelivery()
+        .swipeToPlaceOrder()                    // CheckoutPage -> OrderPlacedPage
+        .checkIsShown()
+        .checkTotal("$29.98", payOnDelivery = true)
+}
+```
+
+Rows in lists (products, cart lines, saved items) are addressed by product name, and their
+buttons by the accessibility label each one carries, such as "Remove Canvas Tote Bag from cart".
+The tests therefore also fail if those labels go missing.
+
+### Test lifecycle
+
+Every test class extends `BaseTest`, which makes each test independent of the others:
+
+| When | What `BaseTest` does | Why |
+|---|---|---|
+| Before each test | `Session.logOut()` | The app keeps state in memory; this clears the login, the cart and the saved items |
+| | `FakeNetwork.delayScale = 0f` | The simulated network calls return at once, which keeps the suite fast |
+| | Registers `AppIdling.resource` | Espresso waits for those calls instead of sleeping |
+| Start | `openApp()` or `openAppLoggedIn()` | Start at the login screen, or logged in on the product list for tests that are not about login |
+| After each test | Closes the screen, unregisters the idling resource, restores the delay, logs out | Leaves nothing behind for the next test |
+| On failure | `LogcatRule` | Attaches the device log to the report |
+
+### Waiting without sleeps
+
+There is no `Thread.sleep` in the suite. The app counts its simulated network calls in a
+`CountingIdlingResource`; with it registered, Espresso waits until they finish before each
+action and check. `uiStep` also waits for the app to be idle before taking its screenshot.
+
+### Custom Espresso pieces
+
+| Piece | File | What it is for |
+|---|---|---|
+| `uiStep` | `support/AllureSteps.kt` | Wraps an action or check as an Allure step with a screenshot; on failure attaches a failure screenshot and rethrows |
+| `dragSliderHandle(fraction)` | `support/SwipeActions.kt` | Drags the slider's handle from where it is to a point on the track (0.5 = halfway). A plain `swipeRight()` starts at a fixed point and can miss the handle |
+| `expectToast(text) { … }` | `support/ToastWatcher.kt` | Checks a toast appears while an action runs. Espresso can't see toasts on recent Android versions, so this listens for the accessibility event each toast sends |
+| `hasError`, `hasHelperText` | `support/Matchers.kt` | The error and helper text of a Material text field |
+| `withTextMatching(regex)` | `support/Matchers.kt` | Text that changes each run, such as the order number `TB-######` |
+| `inRow`, `listHasRow` | `support/ListMatchers.kt` | A view inside the list row for a product; whether a product is anywhere in a list, on screen or not |
+| `string(R.string.…)` | `support/TestData.kt` | Expected texts come from the app's own resources, so a wording change does not break tests |
+
+### What the UI tests cover
+
+| Class | Tests | Covers |
+|---|---|---|
+| `LoginTest` | 10 | Valid login and its toast, field requirements, required fields, invalid email, each password rule, locked account, errors clearing while typing, continuing as a guest |
+| `CartTest` | 4 | Quantity buttons and totals, free shipping just over $50, removing the last item, the cart badge |
+| `SavedForLaterTest` | 5 | Saving from the cart, moving back, deleting, saving from the product list (the product disappears and a toast confirms it), the product returning to the list |
+| `CheckoutTest` | 4 | Purchases by card and pay on delivery (order number format and total), a half swipe that must not place the order, a full swipe on an empty form |
+| `GuestCheckoutTest` | 2 | A guest is asked to log in at checkout, keeps the cart and buys; going back from that login returns to the cart |
+
+Not covered by UI tests yet: product sorting, the details screen's quantity stepper, Settings and
+the menu.
+
+To check the tests can fail, bugs were planted in the app on purpose (saved products left in
+the list, free shipping moved to $60). The matching tests failed, and one test was tightened
+after a planted bug got through.
+
+### Allure report
+
+Each test is recorded with [Allure](https://allurereport.org/) through
+[allure-kotlin](https://github.com/allure-framework/allure-kotlin).
+
+```mermaid
+flowchart LR
+    R["Test run on the device<br/>AllureAndroidJUnitRunner"] --> W["Steps, screenshots and logs<br/>written to TestStorage"]
+    W --> G["Gradle copies them to<br/>allure-results/"]
+    G --> H["allure-report/index.html<br/>one self-contained file"]
+```
+
+- **In the report:** tests are grouped by feature and story (`@Feature`, `@Story`), with a
+  severity and a plain-language name (`@DisplayName`). Each step shows the screen after it. A
+  failing step shows the screen at the moment it failed, and a failing test has the device log.
+  Passwords typed by the tests are not printed in step names.
+- **Automatic:** after `connectedDebugAndroidTest` finishes, pass or fail, Gradle collects the
+  results and generates the report. It opens directly in a browser.
+- **Nothing to install:** Gradle downloads Allure's command-line tool.
+- **Not in git:** `allure-results/` and `allure-report/` are git-ignored.
+
+The report is built by the Gradle task. A run started another way, such as a single test from
+Android Studio's Run button, does not build it unless Android Studio is set to run tests through
+Gradle.
+
+### Failure demo
+
+`FailureDemoTest` holds three tests that fail on purpose, to show what the report gives you when
+something goes wrong: the step that failed, a screenshot of the screen at that moment, the error,
+and the device log.
+
+| Demo test | Why it fails | Allure files it as |
+|---|---|---|
+| Expects the wrong cart total | The cart shows $29.98; the test expects $99.99 | Failed: product defect |
+| Expects an order confirmation after a half swipe | A half swipe does not place the order | Broken: test defect |
+| Waits for a toast that never comes | A wrong password shows a field error, not a toast | Failed: product defect |
+
+They are tagged `@FailureDemo`, which normal runs skip. Run them on their own with
+`./gradlew connectedDebugAndroidTest -PfailureDemo`.
 
 ## License
 
